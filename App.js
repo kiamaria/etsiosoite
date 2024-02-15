@@ -1,25 +1,47 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
 import { StyleSheet, Text, View, TextInput, Button, Alert } from "react-native";
 import MapView, { Marker } from "react-native-maps";
+import * as Location from "expo-location";
 
 export default function App() {
-
   const [address, setAddress] = useState("");
-  const [placeCoordinates, setPlaceCoordinates] = useState({
-    latitude: 60.2017497768936,
-    longitude: 24.933790340295058,
-    latitudeDelta: 0.0922,
-    longitudeDelta: 0.0421,
-  });
+  const [placeCoordinates, setPlaceCoordinates] = useState(null);
+
+
+  useEffect(() => {
+    const getLocation = async () => {
+      try {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") {
+          Alert.alert("No permission to get location");
+          return;
+        }
+
+        const location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.High,
+        });
+
+        setPlaceCoordinates({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+          latitudeDelta: 0.0322,
+          longitudeDelta: 0.0221,
+        });
+      } catch (error) {
+        Alert.alert("Error fetching location", error.message);
+      }
+    };
+
+    getLocation();
+  }, []); 
 
   const getCoordinates = async () => {
     try {
       const response = await fetch(
-        `https://geocode.maps.co/search?q=${address}&api_key=65cc9f4ed4734028628277lrc4beba1`);
+        `https://geocode.maps.co/search?q=${address}&api_key=65cc9f4ed4734028628277lrc4beba1`
+      );
       const data = await response.json();
-
-      console.log(data);
 
       const location = {
         name: data[0].display_name,
@@ -30,7 +52,6 @@ export default function App() {
       };
 
       setPlaceCoordinates(location);
-
     } catch (error) {
       Alert.alert("Error", error.message);
     }
@@ -38,15 +59,16 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-
-      <TextInput style={styles.input}
+      <TextInput
+        style={styles.input}
         placeholder="Address"
-        onChangeText={(text) => setAddress(text)} />
-      
+        onChangeText={(text) => setAddress(text)}
+      />
+
       <Button title="Show" onPress={getCoordinates} />
 
       <MapView style={styles.map} region={placeCoordinates}>
-        <Marker style={{color: pink} } coordinate={placeCoordinates} title={address} />
+        <Marker coordinate={placeCoordinates} title={address} />
       </MapView>
 
       <StatusBar style="auto" />
@@ -63,7 +85,7 @@ const styles = StyleSheet.create({
   },
   map: {
     width: "100%",
-    height: "70%",
+    height: "80%",
   },
   input: {
     fontSize: 20,
